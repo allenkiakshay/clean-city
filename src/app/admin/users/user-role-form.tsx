@@ -1,5 +1,6 @@
 "use client";
 
+import { errorMessage, readJson } from "@/lib/http";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,21 +25,20 @@ export function UserRoleForm({ userId, currentRole }: UserRoleFormProps) {
     setLoading(true);
     setError(null);
 
-    const response = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
 
-    const data: { error?: string } = await response.json();
-    setLoading(false);
-
-    if (!response.ok) {
-      setError(data.error ?? "Could not update role.");
-      return;
+      await readJson<{ role?: string }>(response);
+      router.refresh();
+    } catch (err) {
+      setError(errorMessage(err, "Could not change that role."));
+    } finally {
+      setLoading(false);
     }
-
-    router.refresh();
   }
 
   return (

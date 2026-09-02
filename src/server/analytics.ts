@@ -337,6 +337,39 @@ export async function binPlacementSuggestions(minReports = 3, radiusM = 100) {
   return suggestions;
 }
 
+/**
+ * Headline numbers for the landing page. Counts only — nothing here identifies
+ * a reporter, so it is safe to serve to anyone.
+ */
+export async function publicStats() {
+  await connectMongo();
+
+  const [total, resolved, contributors, avg] = await Promise.all([
+    Report.countDocuments({}),
+    Report.countDocuments({ status: "RESOLVED" }),
+    Report.distinct("reporter", { reporter: { $ne: null } }),
+    Report.aggregate<{ avgMs: number }>([
+      { $match: { status: "RESOLVED", resolvedAt: { $ne: null } } },
+      {
+        $group: {
+          _id: null,
+          avgMs: { $avg: { $subtract: ["$resolvedAt", "$createdAt"] } },
+        },
+      },
+    ]),
+  ]);
+
+  const avgMs = avg[0]?.avgMs ?? null;
+
+  return {
+    total,
+    resolved,
+    contributors: contributors.length,
+    avgResolutionHours:
+      avgMs === null ? null : Math.round((avgMs / 3_600_000) * 10) / 10,
+  };
+}
+
 /** Everything the public map needs, in one call. */
 export async function loadMapData() {
   await connectMongo();

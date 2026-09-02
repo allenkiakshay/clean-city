@@ -145,7 +145,8 @@ export default async function ReportStatusPage({
           <p className="mt-2 text-sm">
             {view.isAnonymous ? (
               <>
-                Filed anonymously &mdash; there is no account behind this report.
+                Filed anonymously &mdash; there is no account behind this
+                report.
               </>
             ) : (
               <>
@@ -176,7 +177,10 @@ export default async function ReportStatusPage({
             Bookmark this link — it is the only way back. If you make an account
             you can attach this report to it and keep the points.
           </p>
-          <Link href="/register" className="mt-2 inline-block text-sm underline">
+          <Link
+            href="/register"
+            className="mt-2 inline-block text-sm underline"
+          >
             Create an account
           </Link>
         </div>

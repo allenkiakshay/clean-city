@@ -853,6 +853,16 @@ rather than debugged later.
 - **`photoUrl` is a strict reference, not a URL.** `z.url()` rejects `/api/photos/<id>`
   outright, and an open `z.url()` would let anyone make the site render an image from any
   server. The regex accepts only photos this app stored.
+- **Never `await response.json()` on a response you have not checked.** A non-JSON body —
+  a platform 413 for a request over 4.5 MB, a proxy error page, an unhandled 500 — makes it
+  throw `JSON.parse: unexpected end of data at line 1 column 1`, which hides the real status
+  and tells the user nothing. `readJson()` in `lib/http.ts` reads the text first and turns
+  every failure into an actionable message.
+- **The 4.5 MB body cap is enforced before your handler runs.** A server-side size check
+  never sees the request, so the client must guarantee what it sends fits. `downscaleImage()`
+  retries at lower dimensions and quality, and throws locally if it still cannot get under —
+  it no longer silently uploads the original when `createImageBitmap` fails, which is what
+  happens with some phone photo formats.
 - **A module-scope `throw` on a missing env var breaks the BUILD, not the request.**
   `next build` imports every route module to collect its config, so a top-level
   `if (!process.env.X) throw` fails the deploy with an error pointing at your file rather

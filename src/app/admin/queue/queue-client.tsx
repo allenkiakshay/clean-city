@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { ReportMap, type MapPoint } from "@/components/map/report-map";
 import { Button } from "@/components/ui/button";
+import { errorMessage, readJson } from "@/lib/http";
 import type { PriorityBucket } from "@/lib/types";
 
 export type QueueRow = {
@@ -44,7 +45,9 @@ export function QueueClient({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [selectedId, setSelectedId] = useState<string | null>(rows[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    rows[0]?.id ?? null,
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mergeSource, setMergeSource] = useState<string | null>(null);
@@ -73,16 +76,12 @@ export function QueueClient({
         body: JSON.stringify(body),
       });
 
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "That action did not go through.");
-      }
+      await readJson<{ status?: string }>(response);
 
       setMergeSource(null);
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(errorMessage(err, "That action did not go through."));
     } finally {
       setBusyId(null);
     }
@@ -96,10 +95,16 @@ export function QueueClient({
             key={value}
             href={`/admin/queue?filter=${value}`}
             className={`rounded-md border px-3 py-1.5 text-sm ${
-              filter === value ? "border-foreground" : "border-input text-muted-foreground"
+              filter === value
+                ? "border-foreground"
+                : "border-input text-muted-foreground"
             }`}
           >
-            {value === "PENDING" ? "Needs review" : value === "OPEN" ? "Open" : "All"}
+            {value === "PENDING"
+              ? "Needs review"
+              : value === "OPEN"
+                ? "Open"
+                : "All"}
           </Link>
         ))}
         <span className="ml-auto text-sm text-muted-foreground">
@@ -177,7 +182,9 @@ export function QueueClient({
                   {row.isAnonymous
                     ? "Filed anonymously"
                     : `${row.reporterName ?? row.reporterLabel}${
-                        row.reporterTrust !== null ? ` · trust ${row.reporterTrust}` : ""
+                        row.reporterTrust !== null
+                          ? ` · trust ${row.reporterTrust}`
+                          : ""
                       }`}
                   {row.confirmationCount > 0
                     ? ` · ${row.confirmationCount} confirmation${
@@ -205,10 +212,13 @@ export function QueueClient({
                   busy={busyId === row.id || pending}
                   mergeSource={mergeSource}
                   onMergeStart={() => setMergeSource(row.id)}
-                  onMergeInto={() => mergeSource && act(mergeSource, {
-                    action: "MERGE",
-                    targetId: row.id,
-                  })}
+                  onMergeInto={() =>
+                    mergeSource &&
+                    act(mergeSource, {
+                      action: "MERGE",
+                      targetId: row.id,
+                    })
+                  }
                   onAct={act}
                 />
               </article>
@@ -223,7 +233,8 @@ export function QueueClient({
             onSelect={setSelectedId}
           />
           <p className="mt-2 text-xs text-muted-foreground">
-            Colour is the priority bucket. Click a circle to highlight it in the list.
+            Colour is the priority bucket. Click a circle to highlight it in the
+            list.
           </p>
         </div>
       </div>
@@ -253,7 +264,12 @@ function Actions({
   if (mergeSource && mergeSource !== row.id) {
     return (
       <div className="mt-3">
-        <Button size="sm" variant="outline" disabled={busy} onClick={onMergeInto}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={onMergeInto}
+        >
           Merge into this one
         </Button>
       </div>
@@ -287,7 +303,12 @@ function Actions({
           >
             Reject
           </Button>
-          <Button size="sm" variant="ghost" disabled={busy} onClick={onMergeStart}>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy}
+            onClick={onMergeStart}
+          >
             Merge…
           </Button>
         </>
@@ -300,7 +321,9 @@ function Actions({
             onChange={(event) => setWorker(event.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
           >
-            {workers.length === 0 ? <option value="">No crew yet</option> : null}
+            {workers.length === 0 ? (
+              <option value="">No crew yet</option>
+            ) : null}
             {workers.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
@@ -310,7 +333,9 @@ function Actions({
           <Button
             size="sm"
             disabled={busy || !worker}
-            onClick={() => onAct(row.id, { action: "ASSIGN", workerId: worker })}
+            onClick={() =>
+              onAct(row.id, { action: "ASSIGN", workerId: worker })
+            }
           >
             {row.status === "ASSIGNED" ? "Reassign" : "Assign"}
           </Button>

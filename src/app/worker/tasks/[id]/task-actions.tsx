@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { errorMessage, readJson } from "@/lib/http";
 import { downscaleImage } from "@/lib/image";
 
 /**
@@ -35,12 +36,11 @@ export function TaskActions({
         body: JSON.stringify(body),
       });
 
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(data.error ?? "That did not go through.");
+      await readJson<{ status?: string }>(response);
 
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(errorMessage(err, "That did not go through."));
     } finally {
       setBusy(false);
     }
@@ -59,14 +59,12 @@ export function TaskActions({
       body.set("file", resized);
 
       const response = await fetch("/api/upload", { method: "POST", body });
-      const data = (await response.json()) as { url?: string; error?: string };
-      if (!response.ok || !data.url) {
-        throw new Error(data.error ?? "Could not upload that photo.");
-      }
+      const data = await readJson<{ url?: string }>(response);
+      if (!data.url) throw new Error("Could not upload that photo.");
 
       setAfterPhotoUrl(data.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload that photo.");
+      setError(errorMessage(err, "Could not upload that photo."));
     } finally {
       setUploading(false);
     }
@@ -83,7 +81,12 @@ export function TaskActions({
       ) : null}
 
       {status === "ASSIGNED" ? (
-        <Button size="lg" className="w-full" disabled={disabled} onClick={() => act({ action: "START" })}>
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={disabled}
+          onClick={() => act({ action: "START" })}
+        >
           Start work
         </Button>
       ) : null}
@@ -112,7 +115,11 @@ export function TaskActions({
             <p className="text-sm text-muted-foreground">Uploading…</p>
           ) : afterPhotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={afterPhotoUrl} alt="After cleanup" className="max-h-56 rounded-md border" />
+            <img
+              src={afterPhotoUrl}
+              alt="After cleanup"
+              className="max-h-56 rounded-md border"
+            />
           ) : null}
 
           <Button

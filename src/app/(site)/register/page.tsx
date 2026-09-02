@@ -1,5 +1,6 @@
 "use client";
 
+import { errorMessage, readJson } from "@/lib/http";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,21 +28,20 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    const data: { error?: string } = await response.json();
-    setLoading(false);
-
-    if (!response.ok) {
-      setError(data.error ?? "Registration failed.");
-      return;
+      await readJson<{ ok?: boolean }>(response);
+      router.push("/login");
+    } catch (err) {
+      setError(errorMessage(err, "Could not create your account."));
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/login");
   }
 
   return (

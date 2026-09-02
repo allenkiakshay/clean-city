@@ -1,3 +1,4 @@
+import { SiteFooter } from "@/components/site-footer";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -32,7 +33,10 @@ export default async function WorkerLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
+        {children}
+      </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -23,8 +23,8 @@ export default async function ReportPage() {
     <main className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="text-2xl font-semibold tracking-tight">Report waste</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        A photo and your location are enough. Anyone can report — an account just
-        lets you follow yours and earn points.
+        A photo and your location are enough. Anyone can report — an account
+        just lets you follow yours and earn points.
       </p>
 
       <div className="mt-10">

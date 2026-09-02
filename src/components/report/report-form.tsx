@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { errorMessage, readJson } from "@/lib/http";
 import { downscaleImage } from "@/lib/image";
-import { REPORT_CATEGORIES, type ReportCategory, type ReporterMode } from "@/lib/types";
+import {
+  REPORT_CATEGORIES,
+  type ReportCategory,
+  type ReporterMode,
+} from "@/lib/types";
 
 const CATEGORY_LABELS: Record<ReportCategory, string> = {
   OVERFLOW: "Overflowing bin",
@@ -32,7 +37,12 @@ function rememberClaimLink(reportId: string, claimUrl: string) {
 }
 
 type Outcome =
-  | { kind: "created"; reportId: string; status: string; claimUrl: string | null }
+  | {
+      kind: "created";
+      reportId: string;
+      status: string;
+      claimUrl: string | null;
+    }
   | { kind: "confirmed"; reportId: string; message: string }
   | { kind: "duplicate"; reportId: string; message: string };
 
@@ -117,15 +127,13 @@ export function ReportForm({
       body.set("file", resized);
 
       const response = await fetch("/api/upload", { method: "POST", body });
-      const data = (await response.json()) as { url?: string; error?: string };
+      const data = await readJson<{ url?: string }>(response);
 
-      if (!response.ok || !data.url) {
-        throw new Error(data.error ?? "Could not upload that photo.");
-      }
+      if (!data.url) throw new Error("Could not upload that photo.");
 
       setPhotoUrl(data.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload that photo.");
+      setError(errorMessage(err, "Could not upload that photo."));
     } finally {
       setPhotoBusy(false);
     }
@@ -156,11 +164,7 @@ export function ReportForm({
         }),
       });
 
-      const data = (await response.json()) as Outcome & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Could not send your report.");
-      }
+      const data = await readJson<Outcome>(response);
 
       if (data.kind === "created" && data.claimUrl) {
         rememberClaimLink(data.reportId, data.claimUrl);
@@ -168,7 +172,7 @@ export function ReportForm({
 
       setOutcome(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send your report.");
+      setError(errorMessage(err, "Could not send your report."));
     } finally {
       setSubmitting(false);
     }
@@ -183,7 +187,9 @@ export function ReportForm({
       <section className="space-y-2">
         <h2 className="text-sm font-medium">Location</h2>
         {locating ? (
-          <p className="text-sm text-muted-foreground">Finding your location…</p>
+          <p className="text-sm text-muted-foreground">
+            Finding your location…
+          </p>
         ) : position ? (
           <p className="text-sm text-muted-foreground tabular-nums">
             {position.lat.toFixed(5)}, {position.lng.toFixed(5)}{" "}
@@ -194,7 +200,12 @@ export function ReportForm({
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-destructive">{locationError}</p>
-            <Button type="button" variant="outline" size="sm" onClick={retryLocate}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={retryLocate}
+            >
               Try again
             </Button>
           </div>
@@ -249,7 +260,8 @@ export function ReportForm({
 
       <section className="space-y-2">
         <label htmlFor="description" className="text-sm font-medium">
-          Anything else? <span className="text-muted-foreground">(optional)</span>
+          Anything else?{" "}
+          <span className="text-muted-foreground">(optional)</span>
         </label>
         <textarea
           id="description"
@@ -372,8 +384,8 @@ function OutcomePanel({ outcome }: { outcome: Outcome }) {
           <div className="space-y-2 rounded-md border border-input p-4">
             <h3 className="text-sm font-medium">Save this link</h3>
             <p className="text-sm text-muted-foreground">
-              You reported anonymously, so this private link is the only way back
-              to it. It is saved in this browser too.
+              You reported anonymously, so this private link is the only way
+              back to it. It is saved in this browser too.
             </p>
             <Link
               href={outcome.claimUrl}
@@ -383,7 +395,10 @@ function OutcomePanel({ outcome }: { outcome: Outcome }) {
             </Link>
           </div>
         ) : (
-          <Link href={`/reports/${outcome.reportId}`} className="text-sm underline">
+          <Link
+            href={`/reports/${outcome.reportId}`}
+            className="text-sm underline"
+          >
             Follow this report
           </Link>
         )}
@@ -394,7 +409,9 @@ function OutcomePanel({ outcome }: { outcome: Outcome }) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-medium">
-        {outcome.kind === "confirmed" ? "Thanks — that helps" : "Already reported"}
+        {outcome.kind === "confirmed"
+          ? "Thanks — that helps"
+          : "Already reported"}
       </h2>
       <p className="text-sm text-muted-foreground">{outcome.message}</p>
       <Link href={`/reports/${outcome.reportId}`} className="text-sm underline">

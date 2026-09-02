@@ -1,3 +1,4 @@
+import { SiteFooter } from "@/components/site-footer";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -24,7 +25,10 @@ export default async function AdminLayout({
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-lg font-semibold tracking-tight">
+            <Link
+              href="/admin"
+              className="text-lg font-semibold tracking-tight"
+            >
               CleanCity Admin
             </Link>
             <nav className="flex gap-4 text-sm text-muted-foreground">
@@ -51,7 +55,10 @@ export default async function AdminLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+        {children}
+      </main>
+      <SiteFooter />
     </div>
   );
 }
