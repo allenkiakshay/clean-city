@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { serverErrorResponse } from "@/server/errors";
 import { TransitionError } from "@/lib/workflow";
 import {
   assignReport,
@@ -64,6 +65,6 @@ export async function PATCH(
     if (error instanceof TransitionError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
-    throw error;
+    return serverErrorResponse(error, "PATCH /api/admin/reports/[id]");
   }
 }

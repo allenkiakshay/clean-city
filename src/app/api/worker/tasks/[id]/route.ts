@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { photoRef } from "@/lib/validators/report";
 import { auth } from "@/auth";
+import { serverErrorResponse } from "@/server/errors";
 import { TransitionError } from "@/lib/workflow";
 import { resolveTask, startTask } from "@/server/worker";
 
@@ -45,6 +46,6 @@ export async function PATCH(
     if (error instanceof TransitionError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
-    throw error;
+    return serverErrorResponse(error, "PATCH /api/worker/tasks/[id]");
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createReportSchema } from "@/lib/validators/report";
+import { serverErrorResponse } from "@/server/errors";
 import { createReport } from "@/server/reports";
 
 export async function POST(request: Request) {
@@ -17,7 +18,12 @@ export async function POST(request: Request) {
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
-  const outcome = await createReport({ payload: parsed.data, userId });
+  let outcome;
+  try {
+    outcome = await createReport({ payload: parsed.data, userId });
+  } catch (error) {
+    return serverErrorResponse(error, "POST /api/reports");
+  }
 
   if (outcome.kind === "confirmed") {
     return NextResponse.json({

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverErrorResponse } from "@/server/errors";
 import { PhotoError, storePhoto } from "@/server/photos";
 
 export async function POST(request: Request) {
@@ -16,6 +17,6 @@ export async function POST(request: Request) {
     if (error instanceof PhotoError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    throw error;
+    return serverErrorResponse(error, "POST /api/upload");
   }
 }
