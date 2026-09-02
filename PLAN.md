@@ -812,8 +812,8 @@ AUTH_SECRET                     # npx auth secret
 AUTH_URL                        # production origin — pins the Google callback
 AUTH_GOOGLE_ID                  # Google OAuth client ID
 AUTH_GOOGLE_SECRET              # Google OAuth client secret
-HASH_PEPPER                     # hashes IoT device tokens at rest
-NEXT_PUBLIC_APP_URL             # deployment origin
+HASH_PEPPER                     # hashes IoT device tokens; must match whatever
+                                #   the seed used, or device tokens will not verify
 ```
 
 ---
@@ -853,6 +853,14 @@ rather than debugged later.
 - **`photoUrl` is a strict reference, not a URL.** `z.url()` rejects `/api/photos/<id>`
   outright, and an open `z.url()` would let anyone make the site render an image from any
   server. The regex accepts only photos this app stored.
+- **A module-scope `throw` on a missing env var breaks the BUILD, not the request.**
+  `next build` imports every route module to collect its config, so a top-level
+  `if (!process.env.X) throw` fails the deploy with an error pointing at your file rather
+  than at the missing variable. This is what broke the first Vercel deploy. Read runtime
+  config *inside* the function that needs it. Where a module-scope guard is genuinely
+  wanted (the Google provider), skip it for `NEXT_PHASE === "phase-production-build"` so a
+  real deployment still fails loudly on its first request.
+  Verify with: `mv .env.local .env.local.bak && npm run build` — it must succeed.
 - **A page that reads the database is prerendered by default.** `/map` and `/leaderboard`
   both built as static (`○`) and would have served data frozen at build time.
   `export const dynamic = "force-dynamic"` is the fix; check the build output for `ƒ` vs `○`

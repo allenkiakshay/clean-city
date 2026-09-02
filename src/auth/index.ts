@@ -12,9 +12,17 @@ function getGoogleProvider() {
   const clientSecret = process.env.AUTH_GOOGLE_SECRET;
 
   if (!clientId || !clientSecret) {
-    // Failing quietly here would ship a production build with no Google button
-    // and no error anywhere — indistinguishable from the feature never existing.
-    if (process.env.NODE_ENV === "production") {
+    // Failing quietly would ship a production build with no Google button and
+    // no error anywhere — indistinguishable from the feature never existing.
+    //
+    // But this runs at module scope, and `next build` imports every route to
+    // collect its config, so throwing during the build breaks the deploy
+    // instead of reporting a misconfiguration. Skip the throw for the build
+    // phase only: a real deployment still fails loudly on its first request,
+    // which is where the message is actionable.
+    const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
+    if (process.env.NODE_ENV === "production" && !isBuildPhase) {
       throw new Error(
         "AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET must be set. Google sign-in " +
           "would otherwise be silently missing from the deployed app.",
